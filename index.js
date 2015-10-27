@@ -50,7 +50,7 @@ var WebSocketServer = require('ws').Server;
     data = Math.max(data,500);
     console.log("sending to serial: " + data);
     if(!!ssc32u){
-      ssc32u.write("#0P" + data + "S600\r", function(err,results){
+      ssc32u.write("#0P" + data + "S1000\r", function(err,results){
         if(!!err)
           console.log("error: ", err);
         console.log('results: ',results);

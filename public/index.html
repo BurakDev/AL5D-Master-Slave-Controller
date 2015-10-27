@@ -36,7 +36,7 @@ function showData(result) {
     text.position(xPos, 10);        // position the text
   }
     
-    var timerKey = setInterval(function(){socket.send('query');},500);
+    var timerKey = setInterval(function(){socket.send('query');},100);
     function stopTimer(){clearInterval(timerKey);}
 </script>
  </body>
