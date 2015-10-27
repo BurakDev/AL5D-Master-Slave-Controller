@@ -44,14 +44,15 @@ var WebSocketServer = require('ws').Server;
   };
 
   var moveServo = function(data) {
-   console.log("sending to serial: " + data);
     if(typeof data !== 'number')
       return;
     data = Math.min(data,2500);
-    data = Math.max(data,1500);
+    data = Math.max(data,500);
+    console.log("sending to serial: " + data);
     if(!!ssc32u){
-      ssc32u.write("#0P" + data + "S500T1500\r", function(err,results){
-        console.log("error: ", err);
+      ssc32u.write("#0P" + data + "S600\r", function(err,results){
+        if(!!err)
+          console.log("error: ", err);
         console.log('results: ',results);
       });
     }
