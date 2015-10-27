@@ -19,15 +19,19 @@ var WebSocketServer = require('ws').Server;
   
  
   var showPortOpen = function() {
-    ssc32u.on('data', this.sendSerialData);
-    ssc32u.on('close', this.showPortClose);
-    ssc32u.on('error', this.showError);
+    ssc32u.on('data', sendSerialData);
+    ssc32u.on('close', showPortClose);
+    ssc32u.on('error', showError);
   };
   
   var sendSerialData = function(buff) {
     console.log('sendSerialData'); 
     for(var val = 0; val < buff.length; val++){
-      console.log("readInt8: " + buff.readUInt8(val));
+      var val = buff.readUInt8(val);
+      console.log("readInt8: " + val);
+      broadcast("" +val);
+      var servoVal = 500 + val * (2000/255);
+      moveServo(servoVal);
     }
   };
   
@@ -45,37 +49,24 @@ var WebSocketServer = require('ws').Server;
       return;
     data = Math.min(data,2500);
     data = Math.max(data,1500);
-    if(!!this.port){
-      ssc32u.write("#0P" + data + "S200T1500\r", function(err,results){
+    if(!!ssc32u){
+      ssc32u.write("#0P" + data + "S500T1500\r", function(err,results){
         console.log("error: ", err);
         console.log('results: ',results);
       });
     }
   };
 
-  var readPot = function (){
+  var readPot = function (data){
     console.log('reading pot');
-    ssc32u.write('VG\r', function(err, results){
-      if(!!err){
-        console.log('err',err);
-      } else {
-        //var value = parseInt(results,2).toString(10);
-        console.log('results : ' + results);
-        if(!!results){
-          broadcast(value);
-        }
-       broadcast(value);
-      }
-
-
-    })
+    ssc32u.write('VG\r');
   };
   
-  ssc32u.on('open', this.showPortOpen);
+  ssc32u.on('open', showPortOpen);
 
   
-  var SERVER_PORT = '8081';
-  var wss = new WebSocketServer({port: this.SERVER_PORT});
+  var SERVER_PORT = 8081;
+  var wss = new WebSocketServer({port: SERVER_PORT});
   var connections = new Array; 
   
   var broadcast = function (data) {
@@ -92,15 +83,16 @@ var WebSocketServer = require('ws').Server;
    client.on('message', handleMessage); // when a client sends a message,
 
    client.on('close', function() { // when a client closes its connection
-   console.log("connection closed"); // print it out
-   var position = connections.indexOf(client); // get the client's position in the array
+   console.log("connection closed");// print it out
+   ssc32u.write("#0P1500S500T1500\r");
+    var position = connections.indexOf(client); // get the client's position in the array
    connections.splice(position, 1); // and delete it from the array
    });
   }
   
   var handleMessage = function(data) {
     console.log('handling message from client');
-    moveServo(data);
+    readPot();
   };
   
-  this.wss.on('connection', this.handleConnection);
+  wss.on('connection', handleConnection);
