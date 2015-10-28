@@ -30,7 +30,7 @@ var WebSocketServer = require('ws').Server;
       var val = buff.readUInt8(val);
       console.log("readInt8: " + val);
       broadcast("" +val);
-      var servoVal = 500 + val * (2000/255);
+      var servoVal = parseInt(500 + val * (2000/255));
       moveServo(servoVal);
     }
   };
