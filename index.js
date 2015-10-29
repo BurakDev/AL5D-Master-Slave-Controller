@@ -3,6 +3,8 @@ var SerialPort = serialport.SerialPort;
 
 var WebSocketServer = require('ws').Server;
 
+var clockID;
+
   var ssc32u = new SerialPort("/dev/cu.usbserial-A5044F99", {
     baudrate: 9600
   });
@@ -22,24 +24,22 @@ var WebSocketServer = require('ws').Server;
     ssc32u.on('data', receiveSerialData);
     ssc32u.on('close', showPortClose);
     ssc32u.on('error', showError);
+    
+    clockID = setInterval(function(){ssc32u.write("VH VG VF \r")},200);
   };
   
   var receiveSerialData = function(buff) {
-    console.log('receiveSerialData : ');
-    console.log(buff);
-    console.log(typeof buff);
     for(var i = 0; i < buff.length; i++){
       var val = buff.readUInt8(i);
-      console.log("readInt8: " + val);
       var pwm = parseInt(500 + val * (2000/255));
-      var message = {servo: i, reading : val};
-      broadcast(JSON.stringify(message));
+      broadcast(JSON.stringify({servo: i, reading: val}));
       //moveServo(i, pwm);
     }
   };
   
   var showPortClose = function() {
-   console.log('port closed.');
+    console.log('port closed.');
+    clearInterval(clockID);
   };
  
   var showError = function(error) {
