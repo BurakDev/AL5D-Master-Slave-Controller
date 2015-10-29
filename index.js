@@ -19,19 +19,22 @@ var WebSocketServer = require('ws').Server;
   
  
   var showPortOpen = function() {
-    ssc32u.on('data', sendSerialData);
+    ssc32u.on('data', receiveSerialData);
     ssc32u.on('close', showPortClose);
     ssc32u.on('error', showError);
   };
   
-  var sendSerialData = function(buff) {
-    console.log('sendSerialData'); 
-    for(var val = 0; val < buff.length; val++){
-      var val = buff.readUInt8(val);
+  var receiveSerialData = function(buff) {
+    console.log('receiveSerialData : ');
+    console.log(buff);
+    console.log(typeof buff);
+    for(var i = 0; i < buff.length; i++){
+      var val = buff.readUInt8(i);
       console.log("readInt8: " + val);
-      broadcast("" +val);
-      var servoVal = parseInt(500 + val * (2000/255));
-      moveServo(servoVal);
+      var pwm = parseInt(500 + val * (2000/255));
+      var message = {servo: i, reading : val};
+      broadcast(JSON.stringify(message));
+      //moveServo(i, pwm);
     }
   };
   
@@ -43,14 +46,14 @@ var WebSocketServer = require('ws').Server;
      console.log('Serial port error: ' + error);
   };
 
-  var moveServo = function(data) {
-    if(typeof data !== 'number')
+  var moveServo = function(sevoNum, pwm) {
+    if(typeof pwm !== 'number')
       return;
-    data = Math.min(data,2500);
-    data = Math.max(data,500);
-    console.log("sending to serial: " + data);
+    data = Math.min(pwm,2500);
+    data = Math.max(pwm,500);
+    console.log("sending to serial: " + pwm);
     if(!!ssc32u){
-      ssc32u.write("#0P" + data + "S1000\r", function(err,results){
+      ssc32u.write("#" + sevoNum + "P" + pwm + "S1000\r", function(err,results){
         if(!!err)
           console.log("error: ", err);
         console.log('results: ',results);
@@ -60,7 +63,14 @@ var WebSocketServer = require('ws').Server;
 
   var readPot = function (data){
     console.log('reading pot');
-    ssc32u.write('VG\r');
+    ssc32u.write('VH VG VF\r', function(err,result) {
+      if(err != undefined) 
+        console.log('readPot error : ' + err);
+      if(result != undefined)
+        console.log('readPot result : ' + typeof result);
+    });
+    //ssc32u.write('VG\r');
+    //ssc32u.write('VF\r');
   };
   
   ssc32u.on('open', showPortOpen);
