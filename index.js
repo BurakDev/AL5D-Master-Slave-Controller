@@ -18,7 +18,7 @@ var clockID;
 var pots = ["VH", "VG", "VF"];
 var servos = [0,1,2];
 var potsString = pots.join(" ") + "\r";
-console.log("potsString : " + potsString);
+//console.log("potsString : " + potsString);
 var curPot = 0;
 
 var blocked = false;
@@ -29,10 +29,10 @@ var blocked = false;
   
   
   var logPorts = function(){
-    console.log('Logging ports: ')
+    //console.log('Logging ports: ')
     serialport.list(function(err,ports){
       ports.forEach(function(singlePort){
-        console.log(singlePort.comName);
+        //console.log(singlePort.comName);
       })
     });
   };
@@ -55,7 +55,7 @@ var blocked = false;
 //      }
 //      
 //    },1000);
-    clockID = setInterval(function(){ssc32u.write(potsString)},0)
+    clockID = setInterval(function(){ssc32u.write(potsString)}, 50);
   }
   
   var receiveSerialData = function(buff) {
@@ -63,7 +63,7 @@ var blocked = false;
       var val = buff.readUInt8(i);
       var pwm = parseInt(500 + val * (2000/255));
      // broadcast(JSON.stringify({servo: i, reading: val}));
-      console.log("Pot : " + pots[curPot] + ", Reading : " + pwm);
+      //console.log("Pot : " + pots[curPot] + ", Reading : " + pwm);
       if(servos[curPot] != null)
         moveServo(servos[curPot], pwm);
       
@@ -74,12 +74,12 @@ var blocked = false;
   };
   
   var showPortClose = function() {
-    console.log('port closed.');
+    //console.log('port closed.');
     clearInterval(clockID);
   };
  
   var showError = function(error) {
-     console.log('Serial port error: ' + error);
+     //console.log('Serial port error: ' + error);
   };
 
   var moveServo = function(sevoNum, pwm) {
@@ -87,24 +87,15 @@ var blocked = false;
       return;
     data = Math.min(pwm,2500);
     data = Math.max(pwm,500);
-    console.log("sending to serial: " + pwm);
+    //console.log("sending to serial: " + pwm);
     if(!!ssc32u){
-      ssc32u.write("#" + sevoNum + "P" + pwm + "S5000\r", function(err,results){
-        if(!!err)
-          console.log("error: ", err);
-        console.log('results: ',results);
-      });
+      ssc32u.write("#" + sevoNum + "P" + pwm + "S5000\r");
     }
   };
 
   var readPot = function (data){
-    console.log('reading pot');
-    ssc32u.write(potsString, function(err,result) {
-      if(err != undefined) 
-        console.log('readPot error : ' + err);
-      if(result != undefined)
-        console.log('readPot result : ' + typeof result);
-    });
+    //console.log('reading pot');
+    ssc32u.write(potsString);
     //ssc32u.write('VG\r');
     //ssc32u.write('VF\r');
   };
@@ -124,13 +115,13 @@ var blocked = false;
 //
 //
 //  var handleConnection = function(client) {
-//   console.log("New Connection"); // you have a new client
+//   ////console.log("New Connection"); // you have a new client
 //   connections.push(client); // add this client to the connections array
 //
 //   client.on('message', handleMessage); // when a client sends a message,
 //
 //   client.on('close', function() { // when a client closes its connection
-//   console.log("connection closed");// print it out
+//   //console.log("connection closed");// print it out
 //   ssc32u.write("#0P1500S500T1500\r");
 //    var position = connections.indexOf(client); // get the client's position in the array
 //   connections.splice(position, 1); // and delete it from the array
@@ -138,7 +129,7 @@ var blocked = false;
 //  }
 //  
 //  var handleMessage = function(data) {
-//    console.log('handling message from client');
+//    //console.log('handling message from client');
 //    readPot();
 //  };
 //  
