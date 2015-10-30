@@ -15,6 +15,12 @@ var WebSocketServer = require('ws').Server;
 
 var clockID;
 
+var pots = ["VH", "VG", "VF"];
+var servos = [0,1,2];
+var potsString = pots.join(" ") + "\r";
+console.log("potsString : " + potsString);
+var curPot = 0;
+
 var blocked = false;
 
   var ssc32u = new SerialPort("/dev/cu.usbserial-A5044F99", {
@@ -37,18 +43,19 @@ var blocked = false;
     ssc32u.on('close', showPortClose);
     ssc32u.on('error', showError);
     
-    clockID = setInterval(function(){
-      if(!blocked)
-      {
-        ssc32u.write("VH VG VF \r", function(){
-          ssc32u.drain(function(){
-            blocked = false;
-          })
-          });
-        blocked = true;
-      }
-      
-    },1000);
+//    clockID = setInterval(function(){
+//      if(!blocked)
+//      {
+//        ssc32u.write("VH VG VF \r", function(){
+//          ssc32u.drain(function(){
+//            blocked = false;
+//          })
+//          });
+//        blocked = true;
+//      }
+//      
+//    },1000);
+    clockID = setInterval(function(){ssc32u.write(potsString)},0)
   }
   
   var receiveSerialData = function(buff) {
@@ -56,8 +63,13 @@ var blocked = false;
       var val = buff.readUInt8(i);
       var pwm = parseInt(500 + val * (2000/255));
      // broadcast(JSON.stringify({servo: i, reading: val}));
-      console.log("Servo: " + i + ", Reading : " + val);
-      //moveServo(i, pwm);
+      console.log("Pot : " + pots[curPot] + ", Reading : " + pwm);
+      if(servos[curPot] != null)
+        moveServo(servos[curPot], pwm);
+      
+      curPot++;
+      if(curPot == pots.length)
+        curPot = 0; 
     }
   };
   
@@ -77,7 +89,7 @@ var blocked = false;
     data = Math.max(pwm,500);
     console.log("sending to serial: " + pwm);
     if(!!ssc32u){
-      ssc32u.write("#" + sevoNum + "P" + pwm + "S1000\r", function(err,results){
+      ssc32u.write("#" + sevoNum + "P" + pwm + "S5000\r", function(err,results){
         if(!!err)
           console.log("error: ", err);
         console.log('results: ',results);
@@ -87,7 +99,7 @@ var blocked = false;
 
   var readPot = function (data){
     console.log('reading pot');
-    ssc32u.write('VH VG VF\r', function(err,result) {
+    ssc32u.write(potsString, function(err,result) {
       if(err != undefined) 
         console.log('readPot error : ' + err);
       if(result != undefined)
