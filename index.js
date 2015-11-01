@@ -11,15 +11,42 @@
 var serialport = require('serialport');
 var SerialPort = serialport.SerialPort;
 
+var keypress = require('keypress')
+  , tty = require('tty');
+
 var WebSocketServer = require('ws').Server;
 
 var clockID;
 
-var pots = ["VH", "VG", "VF"];
-var servos = [0,1,2];
+var zeroPWM = 1500;
+
+function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM,){
+  this.pot = pot;
+  this.servo = servo;
+  this.minByte = minByte || 0;
+  this.maxByte = maxByte || 255;
+  this.minPWM = minPWM || 500;
+  this.maxPWM = maxPWM || 2500;
+  this.mapRange = function (curByte){
+    curByte = Math.max(curByte,this.minByte);
+    curByte = Max.min(curByte,this.maxByte);
+    return this.minPWM + curByte * ((this.maxPWM-this.minPWM)/this.maxByte);
+  };
+} 
+
+var base = new Joint("VA",0);
+var shoulder = new Joint("VB",1);
+var elbow = new Joint("VC",2);
+var wrist = new Joint("VD",3);
+var gripper = new Joint("VE",4);
+
+
+var pots = ["VG"];
+var servos = [0];
 var potsString = pots.join(" ") + "\r";
 //console.log("potsString : " + potsString);
 var curPot = 0;
+var oldContPotVal = 1500;
 
 var blocked = false;
 
@@ -61,12 +88,14 @@ var blocked = false;
   var receiveSerialData = function(buff) {
     for(var i = 0; i < buff.length; i++){
       var val = buff.readUInt8(i);
-      var pwm = parseInt(500 + val * (2000/255));
+      var pwm = parseInt(750 + val * (1500/255));
      // broadcast(JSON.stringify({servo: i, reading: val}));
       //console.log("Pot : " + pots[curPot] + ", Reading : " + pwm);
-      if(servos[curPot] != null)
-        moveServo(servos[curPot], pwm);
       
+      if(servos[curPot] !== null){
+        moveServo(servos[curPot], pwm);
+        //moveContServo(pwm);
+      }
       curPot++;
       if(curPot == pots.length)
         curPot = 0; 
@@ -89,9 +118,23 @@ var blocked = false;
     data = Math.max(pwm,500);
     //console.log("sending to serial: " + pwm);
     if(!!ssc32u){
-      ssc32u.write("#" + sevoNum + "P" + pwm + "S5000\r");
+      console.log("current PWM: " + pwm);
+      ssc32u.write("#" + sevoNum + "P" + pwm + "\r");
     }
   };
+
+  var moveContServo = function(curContPotVal){
+    var deltaPot = curContPotVal-oldContPotVal;
+    oldContPotVal = curContPotVal;
+    console.log("deltaPWM : " + deltaPot);
+    var toSend = 1500 + (deltaPot * 1);
+    toSend = Math.min(toSend,2500);
+    toSend = Math.max(toSend,500);
+    console.log('toSend: ' + toSend);
+    
+    ssc32u.write("#0P" + toSend + "\r");
+    
+  }
 
   var readPot = function (data){
     //console.log('reading pot');
@@ -101,6 +144,26 @@ var blocked = false;
   };
   
   ssc32u.on('open', showPortOpen);
+
+// make `process.stdin` begin emitting "keypress" events
+keypress(process.stdin);
+
+// listen for the "keypress" event
+process.stdin.on('keypress', function (ch, key) {
+  console.log('got "keypress"', key);
+  if (key && key.name === "up") {
+    zeroPWM++;
+  } else if(key && key.name === "down"){
+    zeroPWM--;
+  }
+});
+
+if (typeof process.stdin.setRawMode == 'function') {
+  process.stdin.setRawMode(true);
+} else {
+  tty.setRawMode(true);
+}
+process.stdin.resume();
 
 //  
 //  var SERVER_PORT = 8081;
