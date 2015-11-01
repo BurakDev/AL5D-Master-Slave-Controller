@@ -1,10 +1,8 @@
 /*
+ test servo:
+  zero 1485 - 1492
+  
 
- Call the next ssc32u.write in the previous callback
- 
- 
- Notice that the numbers are coming back in the right order, just in different call.
- Create a variable to keep track of which servo was last updated and then just loop it.
 */
 
 
@@ -20,7 +18,7 @@ var clockID;
 
 var zeroPWM = 1500;
 
-function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM,){
+function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM){
   this.pot = pot;
   this.servo = servo;
   this.minByte = minByte || 0;
@@ -40,13 +38,17 @@ var elbow = new Joint("VC",2);
 var wrist = new Joint("VD",3);
 var gripper = new Joint("VE",4);
 
+var joints = [base,shoulder,elbow,wrist,gripper];
+
 
 var pots = ["VG"];
 var servos = [0];
-var potsString = pots.join(" ") + "\r";
+var potsString = "VG \r";//joints.reduce(function(prev,cur){return prev + cur.pot + " "},"") + " \r";
 //console.log("potsString : " + potsString);
 var curPot = 0;
 var oldContPotVal = 1500;
+var moveRight = false;
+var moveLeft = false;
 
 var blocked = false;
 
@@ -88,13 +90,14 @@ var blocked = false;
   var receiveSerialData = function(buff) {
     for(var i = 0; i < buff.length; i++){
       var val = buff.readUInt8(i);
-      var pwm = parseInt(750 + val * (1500/255));
+      var pwm = parseInt(500 + val * (2000/255));
      // broadcast(JSON.stringify({servo: i, reading: val}));
       //console.log("Pot : " + pots[curPot] + ", Reading : " + pwm);
       
       if(servos[curPot] !== null){
-        moveServo(servos[curPot], pwm);
-        //moveContServo(pwm);
+        //moveServo(servos[curPot], zeroPWM);
+        //console.log("zeroPWM : " + zeroPWM);
+        moveContServo(val);
       }
       curPot++;
       if(curPot == pots.length)
@@ -126,36 +129,40 @@ var blocked = false;
   var moveContServo = function(curContPotVal){
     var deltaPot = curContPotVal-oldContPotVal;
     oldContPotVal = curContPotVal;
-    console.log("deltaPWM : " + deltaPot);
-    var toSend = 1500 + (deltaPot * 1);
+    console.log("deltaPot : " + deltaPot);
+    var toSend = 1487 + (deltaPot * 20);
     toSend = Math.min(toSend,2500);
     toSend = Math.max(toSend,500);
     console.log('toSend: ' + toSend);
     
-    ssc32u.write("#0P" + toSend + "\r");
+    if(moveLeft){toSend = 1400;}
+    if(moveRight){toSend = 1540;}
     
+    ssc32u.write("#0P" + toSend + "\r");
   }
-
-  var readPot = function (data){
-    //console.log('reading pot');
-    ssc32u.write(potsString);
-    //ssc32u.write('VG\r');
-    //ssc32u.write('VF\r');
-  };
   
-  ssc32u.on('open', showPortOpen);
+ssc32u.on('open', showPortOpen);
 
 // make `process.stdin` begin emitting "keypress" events
 keypress(process.stdin);
 
 // listen for the "keypress" event
 process.stdin.on('keypress', function (ch, key) {
-  console.log('got "keypress"', key);
-  if (key && key.name === "up") {
-    zeroPWM++;
+  //console.log('got "keypress"', key);
+  if (key && key.name === "left") {
+    moveLeft = true;
+    moveRight = false;
   } else if(key && key.name === "down"){
-    zeroPWM--;
+    moveLeft = false;
+    moveRight = false;
+  } else if(key && key.name === "right"){
+    moveLeft = false;
+    moveRight = true;
   }
+  if (key && key.ctrl && key.name == 'c') {
+   process.exit();
+  }
+  //process.stdout.write( ch );
 });
 
 if (typeof process.stdin.setRawMode == 'function') {
