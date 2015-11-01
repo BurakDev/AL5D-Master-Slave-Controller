@@ -1,7 +1,11 @@
 /*
  test servo:
-  zero 1485 - 1492
-  
+  zero 1485 - 1492 
+base zero 1465 1456(no sing) 1451
+shoulder limit 630 - 2170
+elbow limit 954 - 2319
+wrist limit 500 - 2500 ?
+gripper limit 743 - 2233
 
 */
 
@@ -130,13 +134,13 @@ var blocked = false;
     var deltaPot = curContPotVal-oldContPotVal;
     oldContPotVal = curContPotVal;
     console.log("deltaPot : " + deltaPot);
-    var toSend = 1487 + (deltaPot * 20);
+    var toSend = 1456 + (deltaPot * 20);
     toSend = Math.min(toSend,2500);
     toSend = Math.max(toSend,500);
     console.log('toSend: ' + toSend);
     
-    if(moveLeft){toSend = 1400;}
-    if(moveRight){toSend = 1540;}
+    //if(moveLeft){toSend = 1400;}
+    //if(moveRight){toSend = 1540;}
     
     ssc32u.write("#0P" + toSend + "\r");
   }
@@ -149,13 +153,16 @@ keypress(process.stdin);
 // listen for the "keypress" event
 process.stdin.on('keypress', function (ch, key) {
   //console.log('got "keypress"', key);
-  if (key && key.name === "left") {
-    moveLeft = true;
-    moveRight = false;
+  if (key && key.name === "up") {
+    zeroPWM++;
   } else if(key && key.name === "down"){
+    zeroPWM--;
     moveLeft = false;
     moveRight = false;
-  } else if(key && key.name === "right"){
+  } else if(key && key.name === "left"){
+    moveLeft = true;
+    moveRight = false;
+  }else if(key && key.name === "right"){
     moveLeft = false;
     moveRight = true;
   }
