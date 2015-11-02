@@ -37,18 +37,18 @@ function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM){
 } 
 
 var base = new Joint("VA",0);
-var shoulder = new Joint("VB",1);
-var elbow = new Joint("VC",2);
-var wrist = new Joint("VD",3);
-var gripper = new Joint("VE",4);
+var shoulder = new Joint("VB",1,null,null,630,2170);
+var elbow = new Joint("VC",2,null,null,954,2319);
+var wrist = new Joint("VD",3,null,null,500,2500);
+var gripper = new Joint("VE",4,null,null,743,2233);
 
 var joints = [base,shoulder,elbow,wrist,gripper];
 
 
 var pots = ["VG"];
 var servos = [0];
-var potsString = "VG \r";//joints.reduce(function(prev,cur){return prev + cur.pot + " "},"") + " \r";
-//console.log("potsString : " + potsString);
+var potsString = joints.reduce(function(prev,cur){return prev + cur.pot + " "},"") + " \r";
+console.log("potsString : " + potsString);
 var curPot = 0;
 var oldContPotVal = 1500;
 var moveRight = false;
@@ -87,7 +87,7 @@ var blocked = false;
 //        blocked = true;
 //      }
 //      
-//    },1000);
+//    },1000);   try testing this out with higher write speed 
     clockID = setInterval(function(){ssc32u.write(potsString)}, 50);
   }
   
@@ -98,10 +98,11 @@ var blocked = false;
      // broadcast(JSON.stringify({servo: i, reading: val}));
       //console.log("Pot : " + pots[curPot] + ", Reading : " + pwm);
       
-      if(servos[curPot] !== null){
+      if(joints[curPot] !== null){
         //moveServo(servos[curPot], zeroPWM);
         //console.log("zeroPWM : " + zeroPWM);
-        moveContServo(val);
+        //moveContServo(val);
+        console.log('Servo ' + joints[curPot].servo + ' : ' + val);
       }
       curPot++;
       if(curPot == pots.length)
