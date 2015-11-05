@@ -1,7 +1,24 @@
 /*
+
+PWM's 
+
  test servo:
-  zero 1485 - 1492
-  
+  zero 1485 - 1492 
+base zero 1465 1456(no sing) 1451
+shoulder limit 630 - 2170
+elbow limit 954 - 2319
+wrist limit 500 - 2500 ?
+gripper limit 743 - 2233
+
+Pot Readings
+
+base 
+shoulder
+elbow
+wrist
+wrist rotate 0-255
+gripper 0-255
+
 
 */
 
@@ -14,10 +31,6 @@ var keypress = require('keypress')
 
 var WebSocketServer = require('ws').Server;
 
-var clockID;
-
-var zeroPWM = 1500;
-
 function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM){
   this.pot = pot;
   this.servo = servo;
@@ -27,28 +40,31 @@ function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM){
   this.maxPWM = maxPWM || 2500;
   this.mapRange = function (curByte){
     curByte = Math.max(curByte,this.minByte);
-    curByte = Max.min(curByte,this.maxByte);
+    curByte = Math.min(curByte,this.maxByte);
     return this.minPWM + curByte * ((this.maxPWM-this.minPWM)/this.maxByte);
   };
 } 
 
-var base = new Joint("VA",0);
-var shoulder = new Joint("VB",1);
-var elbow = new Joint("VC",2);
-var wrist = new Joint("VD",3);
-var gripper = new Joint("VE",4);
+var base = new Joint("VH",0);
+var shoulder = new Joint("VG",1,0,139,1990,650);
+var elbow = new Joint("VF",2,0,228,585,2500);
+var wrist = new Joint("VE",3,0,195,500,2500);
+var wrist_rotate = new Joint("VD",4,0,255,500,2500);
+var gripper = new Joint("VC",5,0,255,868,2500);
 
-var joints = [base,shoulder,elbow,wrist,gripper];
+var joints = [base,shoulder,elbow,wrist,wrist_rotate,gripper];
+var joints = [base];
 
-
-var pots = ["VG"];
-var servos = [0];
-var potsString = "VG \r";//joints.reduce(function(prev,cur){return prev + cur.pot + " "},"") + " \r";
-//console.log("potsString : " + potsString);
+var potsString = joints.reduce(function(prev,cur){return prev + cur.pot + " "},"") + " \r";
+console.log("potsString : " + potsString);
+var clockID;
+var zeroPWM = 1500;
 var curPot = 0;
 var oldContPotVal = 1500;
 var moveRight = false;
 var moveLeft = false;
+
+var coeffSpinny = 8;
 
 var blocked = false;
 
@@ -83,24 +99,26 @@ var blocked = false;
 //        blocked = true;
 //      }
 //      
-//    },1000);
-    clockID = setInterval(function(){ssc32u.write(potsString)}, 50);
+//    },1000);   try testing this out with higher write speed 
+    clockID = setInterval(function(){ssc32u.write(potsString)}, 80);
   }
   
   var receiveSerialData = function(buff) {
     for(var i = 0; i < buff.length; i++){
       var val = buff.readUInt8(i);
-      var pwm = parseInt(500 + val * (2000/255));
      // broadcast(JSON.stringify({servo: i, reading: val}));
       //console.log("Pot : " + pots[curPot] + ", Reading : " + pwm);
       
-      if(servos[curPot] !== null){
-        //moveServo(servos[curPot], zeroPWM);
-        //console.log("zeroPWM : " + zeroPWM);
-        moveContServo(val);
+      console.log(joints[curPot].pot + " : " + val);
+      if(joints[curPot] !== null){
+        if(curPot === 0){
+          moveContServo(val);
+        } else{
+          moveServo(joints[curPot].servo, joints[curPot].mapRange(val));
+        }
       }
       curPot++;
-      if(curPot == pots.length)
+      if(curPot == joints.length)
         curPot = 0; 
     }
   };
@@ -130,13 +148,14 @@ var blocked = false;
     var deltaPot = curContPotVal-oldContPotVal;
     oldContPotVal = curContPotVal;
     console.log("deltaPot : " + deltaPot);
-    var toSend = 1487 + (deltaPot * 20);
+    var toSend = 1459 + (deltaPot * coeffSpinny);
+    console.log('coeffSpinny = ' + coeffSpinny);
     toSend = Math.min(toSend,2500);
     toSend = Math.max(toSend,500);
     console.log('toSend: ' + toSend);
     
-    if(moveLeft){toSend = 1400;}
-    if(moveRight){toSend = 1540;}
+    //if(moveLeft){toSend = 1400;}
+    //if(moveRight){toSend = 1540;}
     
     ssc32u.write("#0P" + toSend + "\r");
   }
@@ -149,13 +168,18 @@ keypress(process.stdin);
 // listen for the "keypress" event
 process.stdin.on('keypress', function (ch, key) {
   //console.log('got "keypress"', key);
-  if (key && key.name === "left") {
-    moveLeft = true;
-    moveRight = false;
+  if (key && key.name === "up") {
+    zeroPWM++;
+    coeffSpinny++;
   } else if(key && key.name === "down"){
+    zeroPWM--;
     moveLeft = false;
     moveRight = false;
-  } else if(key && key.name === "right"){
+    coeffSpinny--;
+  } else if(key && key.name === "left"){
+    moveLeft = true;
+    moveRight = false;
+  }else if(key && key.name === "right"){
     moveLeft = false;
     moveRight = true;
   }
