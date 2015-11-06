@@ -74,10 +74,10 @@ var blocked = false;
   
   
   var logPorts = function(){
-    //console.log('Logging ports: ')
+    console.log('Logging ports: ')
     serialport.list(function(err,ports){
       ports.forEach(function(singlePort){
-        //console.log(singlePort.comName);
+        console.log(singlePort.comName);
       })
     });
   };
