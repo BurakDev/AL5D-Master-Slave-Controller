@@ -47,13 +47,13 @@ function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM){
 
 var base = new Joint("VH",0);
 var shoulder = new Joint("VG",1,0,139,1990,650);
-var elbow = new Joint("VF",2,0,228,585,2500);
+var elbow = new Joint("VF",2,0,228,500,2500);
 var wrist = new Joint("VE",3,0,195,500,2500);
 var wrist_rotate = new Joint("VD",4,0,255,500,2500);
 var gripper = new Joint("VC",5,0,255,868,2500);
 
 var joints = [base,shoulder,elbow,wrist,wrist_rotate,gripper];
-var joints = [base];
+//var joints = [base,shoulder,elbow,wrist];
 
 var potsString = joints.reduce(function(prev,cur){return prev + cur.pot + " "},"") + " \r";
 console.log("potsString : " + potsString);
@@ -100,7 +100,7 @@ var blocked = false;
 //      }
 //      
 //    },1000);   try testing this out with higher write speed 
-    clockID = setInterval(function(){ssc32u.write(potsString)}, 80);
+    clockID = setInterval(function(){ssc32u.write(potsString)}, 150);
   }
   
   var receiveSerialData = function(buff) {
@@ -109,9 +109,9 @@ var blocked = false;
      // broadcast(JSON.stringify({servo: i, reading: val}));
       //console.log("Pot : " + pots[curPot] + ", Reading : " + pwm);
       
-      console.log(joints[curPot].pot + " : " + val);
+      //console.log(joints[curPot].pot + " : " + val);
       if(joints[curPot] !== null){
-        if(curPot === 0){
+        if(joints[curPot].servo == 0){
           moveContServo(val);
         } else{
           moveServo(joints[curPot].servo, joints[curPot].mapRange(val));
@@ -139,7 +139,7 @@ var blocked = false;
     data = Math.max(pwm,500);
     //console.log("sending to serial: " + pwm);
     if(!!ssc32u){
-      console.log("current PWM: " + pwm);
+     // console.log("current PWM: " + pwm);
       ssc32u.write("#" + sevoNum + "P" + pwm + "\r");
     }
   };
@@ -147,15 +147,15 @@ var blocked = false;
   var moveContServo = function(curContPotVal){
     var deltaPot = curContPotVal-oldContPotVal;
     oldContPotVal = curContPotVal;
-    console.log("deltaPot : " + deltaPot);
+    //console.log("deltaPot : " + deltaPot);
     var toSend = 1459 + (deltaPot * coeffSpinny);
-    console.log('coeffSpinny = ' + coeffSpinny);
+    //console.log('coeffSpinny = ' + coeffSpinny);
     toSend = Math.min(toSend,2500);
     toSend = Math.max(toSend,500);
-    console.log('toSend: ' + toSend);
+    //console.log('toSend: ' + toSend);
     
-    //if(moveLeft){toSend = 1400;}
-    //if(moveRight){toSend = 1540;}
+    if(moveLeft){toSend = 1400;}
+    if(moveRight){toSend = 1540;}
     
     ssc32u.write("#0P" + toSend + "\r");
   }
