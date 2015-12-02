@@ -12,11 +12,11 @@ gripper limit 743 - 2233
 
 Pot Readings
 
-base 
-shoulder
-elbow
-wrist
-wrist rotate 0-255
+base 0-213
+shoulder 22-209
+elbow 120 -255
+wrist 25 - 234
+wrist rotate 20-230
 gripper 0-255
 
 
@@ -29,7 +29,7 @@ var SerialPort = serialport.SerialPort;
 var keypress = require('keypress')
   , tty = require('tty');
 
-var WebSocketServer = require('ws').Server;
+//var WebSocketServer = require('ws').Server;
 
 function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM){
   this.pot = pot;
@@ -41,18 +41,26 @@ function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM){
   this.mapRange = function (curByte){
     curByte = Math.max(curByte,this.minByte);
     curByte = Math.min(curByte,this.maxByte);
-    return this.minPWM + curByte * ((this.maxPWM-this.minPWM)/this.maxByte);
+    return this.minPWM + (curByte-this.minByte) * ((this.maxPWM-this.minPWM)/(this.maxByte-this.minByte));
   };
 } 
 
+//var base = new Joint("VH",0);
+//var shoulder = new Joint("VG",1,0,139,1990,650);
+//var elbow = new Joint("VF",2,0,228,500,2500);
+//var wrist = new Joint("VE",3,0,195,500,2500);
+//var wrist_rotate = new Joint("VD",4,0,255,500,2500);
+//var gripper = new Joint("VC",5,0,255,868,2500);
+
+
 var base = new Joint("VH",0);
-var shoulder = new Joint("VG",1,0,139,1990,650);
-var elbow = new Joint("VF",2,0,228,500,2500);
-var wrist = new Joint("VE",3,0,195,500,2500);
-var wrist_rotate = new Joint("VD",4,0,255,500,2500);
+var shoulder = new Joint("VG",1,22,209,1990,650);
+var elbow = new Joint("VF",2,125,255,2200,1200);
+var wrist = new Joint("VE",3,25,234,500,2500);
+var wrist_rotate = new Joint("VD",4,20,230,500,2500);
 var gripper = new Joint("VC",5,0,255,868,2500);
 
-var joints = [base,shoulder,elbow,wrist,wrist_rotate,gripper];
+var joints = [base,shoulder,elbow,wrist,wrist_rotate];
 //var joints = [base,shoulder,elbow,wrist];
 
 var potsString = joints.reduce(function(prev,cur){return prev + cur.pot + " "},"") + " \r";
@@ -63,6 +71,8 @@ var curPot = 0;
 var oldContPotVal = 1500;
 var moveRight = false;
 var moveLeft = false;
+var commandString = "";
+var toSend = 1459;
 
 var coeffSpinny = 8;
 
@@ -88,6 +98,8 @@ var blocked = false;
     ssc32u.on('close', showPortClose);
     ssc32u.on('error', showError);
     
+    ssc32u.write("#0P1459");
+    
 //    clockID = setInterval(function(){
 //      if(!blocked)
 //      {
@@ -100,26 +112,38 @@ var blocked = false;
 //      }
 //      
 //    },1000);   try testing this out with higher write speed 
-    clockID = setInterval(function(){ssc32u.write(potsString)}, 150);
+    clockID = setInterval(function(){ssc32u.write(potsString)}, 70);
   }
   
   var receiveSerialData = function(buff) {
     for(var i = 0; i < buff.length; i++){
       var val = buff.readUInt8(i);
      // broadcast(JSON.stringify({servo: i, reading: val}));
-      //console.log("Pot : " + pots[curPot] + ", Reading : " + pwm);
+     // console.log("Pot : " + pots[curPot] + ", Reading : " + val);
       
-      //console.log(joints[curPot].pot + " : " + val);
+     //console.log(joints[curPot].pot + " : " + val);
+    // console.log("PWM for" + joints[curPot].pot + " = " + joints[curPot].mapRange(val));
       if(joints[curPot] !== null){
         if(joints[curPot].servo == 0){
-          moveContServo(val);
+          toSend = val-oldContPotVal;
+          oldContPotVal = val;
+          var toSend = Math.round(1459 + (toSend * coeffSpinny));
+//          toSend = Math.min(toSend,2500);
+//          toSend = Math.max(toSend,500);
+          commandString += "#0P" + toSend;  
+          //moveContServo(val);
         } else{
-          moveServo(joints[curPot].servo, joints[curPot].mapRange(val));
+          commandString += "#" + joints[curPot].servo + "P" + ~~joints[curPot].mapRange(val);
+          //moveServo(joints[curPot].servo, joints[curPot].mapRange(val));
         }
       }
       curPot++;
-      if(curPot == joints.length)
-        curPot = 0; 
+      if(curPot == joints.length){
+        //console.log(commandString);
+        ssc32u.write(commandString + "\r")
+        curPot = 0;
+        commandString = "";
+      }
     }
   };
   
