@@ -43,7 +43,30 @@ function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM){
     curByte = Math.min(curByte,this.maxByte);
     return this.minPWM + (curByte-this.minByte) * ((this.maxPWM-this.minPWM)/(this.maxByte-this.minByte));
   };
-} 
+
+//function (curByte){
+//    curByte = Math.max(curByte,this.minByte);
+//    curByte = Math.min(curByte,this.maxByte);
+//    return this.minPWM + (curByte-this.minByte) * ((this.maxPWM-this.minPWM)/(this.maxByte-this.minByte));
+
+//(function(minByte,maxByte,minPWM,maxPWM){
+//  var memo = {};
+//  
+//  function f(n){
+//    var value;
+//    
+//    if(n in memo){
+//      value = memo[n];
+//    } else {
+//      value = minPWM + (n-minByte) * ((maxPWM-minPWM)/(maxByte-minByte));
+//      memo[n] = value;
+//    }
+//    
+//    return value;
+//  }
+//  
+//  return f;
+//})();
 
 //var base = new Joint("VH",0);
 //var shoulder = new Joint("VG",1,0,139,1990,650);
