@@ -10,6 +10,6 @@ This is currently a WIP, pre-Aplha project to control a [Lynxmotion AL5D Robot A
 3. Open a terminal in the directory and run `node index.js`
 4. There is now a connection that runs like so
 
-Node server(index.js) **<->** SerialPort **<->** Micro-controller(SSC-32U)
+Node runtime(index.js) **<->** SerialPort **<->** Micro-controller(SSC-32U)
 
 **Please be sure to look at the code to modify the potentiometer/servo setting to match those of your project.**
