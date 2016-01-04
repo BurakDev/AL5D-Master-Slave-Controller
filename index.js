@@ -12,11 +12,11 @@ gripper limit 743 - 2233
 
 Pot Readings
 
-base 0-213
-shoulder 22-209
-elbow 120 -255
-wrist 25 - 234
-wrist rotate 20-230
+base 0-213           0-255
+shoulder 22-209      0-121
+elbow 120 -255       0-190
+wrist 25 - 234       34-214
+wrist rotate 20-230  23-225
 gripper 0-255
 
 
@@ -43,6 +43,7 @@ function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM){
     curByte = Math.min(curByte,this.maxByte);
     return this.minPWM + (curByte-this.minByte) * ((this.maxPWM-this.minPWM)/(this.maxByte-this.minByte));
   };
+}
 
 //function (curByte){
 //    curByte = Math.max(curByte,this.minByte);
@@ -77,10 +78,10 @@ function Joint (pot, servo,minByte,maxByte, minPWM, maxPWM){
 
 
 var base = new Joint("VH",0);
-var shoulder = new Joint("VG",1,22,209,1990,650);
-var elbow = new Joint("VF",2,125,255,2200,1200);
-var wrist = new Joint("VE",3,25,234,500,2500);
-var wrist_rotate = new Joint("VD",4,20,230,500,2500);
+var shoulder = new Joint("VG",1,0,121,2000,500);
+var elbow = new Joint("VF",2,0,190,1000,2500);
+var wrist = new Joint("VE",3,34,214,500,2500);
+var wrist_rotate = new Joint("VD",4,23,225,500,2500);
 var gripper = new Joint("VC",5,0,255,868,2500);
 
 var joints = [base,shoulder,elbow,wrist,wrist_rotate];
@@ -144,15 +145,15 @@ var blocked = false;
      // broadcast(JSON.stringify({servo: i, reading: val}));
      // console.log("Pot : " + pots[curPot] + ", Reading : " + val);
       
-     //console.log(joints[curPot].pot + " : " + val);
+     console.log(joints[curPot].pot + " : " + val);
     // console.log("PWM for" + joints[curPot].pot + " = " + joints[curPot].mapRange(val));
       if(joints[curPot] !== null){
         if(joints[curPot].servo == 0){
           toSend = val-oldContPotVal;
           oldContPotVal = val;
           var toSend = Math.round(1459 + (toSend * coeffSpinny));
-//          toSend = Math.min(toSend,2500);
-//          toSend = Math.max(toSend,500);
+          toSend = Math.min(toSend,2500);
+          toSend = Math.max(toSend,500);
           commandString += "#0P" + toSend;  
           //moveContServo(val);
         } else{
